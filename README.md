@@ -6,3 +6,8 @@ CloudWalks Quality Engineer Teste Application
     - Read the log file
     - Group the game data of each match
     - Collect kill data
+
+# Python Libraries needed
+
+    - re for regular expressions
+
