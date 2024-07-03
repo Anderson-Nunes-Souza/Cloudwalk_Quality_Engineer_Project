@@ -1,3 +1,5 @@
+import re
+
 games = []
 current_game = None
 
@@ -40,8 +42,17 @@ try:
                         current_game=None
             #Collects players info
             elif "ClientUserinfoChanged:" in line:
+                #print(f'linha 45 {line}')
                 player_id = line[2]
-                player_name = line[3].split('\\')[1]
+                regex = 'r"n\\(.+?)\\t"'
+                new_line = ' '.join(line[3:])
+                #print(f'linha 49 {new_line}')
+                #match = re.search(regex, new_line)
+
+                #Regex to adjust Player's Names with spaces
+                player_name = re.search(r'n\\(.*?)\\t', new_line)
+                player_name = player_name.group(1)
+                #print(f'linha 54: {player_name.group(1)}')
                 if player_id not in current_game["players"]:
                     current_game["players"][player_id] = {
                         "name": player_name,
@@ -53,21 +64,19 @@ try:
             #Collects the kill Information
             elif "killed" in line:
                 if current_game is not None:
-                    parts = str(line)
-                    print(parts)
-                    parts = parts.split(' ')
-# 11
-# ["['14:30',", "'Kill:',", "'5',", "'7',", "'6:',", "'Oootsimo',", "'killed',", "'Assasinu',", "'Credi',", "'by',", "'MOD_ROCKET']"]
-# 10
-# ["['14:31',", "'Kill:',", "'2',", "'4',", "'13:',", "'Isgalamido',", "'killed',", "'Zeh',", "'by',", "'MOD_BFG_SPLASH']"]
+                    parts = line
+                    #join to adjust the Player's Names with spaces
+                    killer_name = ' '.join(parts[5:parts.index('killed')])
 # 12
-# ["['14:35',", "'Kill:',", "'5',", "'3',", "'7:',", "'Oootsimo',", "'killed',", "'Dono',", "'da',", "'Bola',", "'by',", "'MOD_ROCKET_SPLASH']"]
-                    killer_id = parts[5]
-                    victim_id = parts[7]
-                if killer_id != victim_id:
+#  linha 57: ['14:46', 'Kill:', '3', '8', '10:', 'Dono', 'da', 'Bola', 'killed', 'Mal', 'by', 'MOD_RAILGUN']
+# 12
+#  linha 57: ['15:17', 'Kill:', '7', '7', '7:', 'Assasinu', 'Credi', 'killed', 'Assasinu', 'Credi', 'by', 'MOD_ROCKET_SPLASH']
+# linha 57: ['15:13', 'Kill:', '3', '8', '10:', 'Dono', 'da', 'Bola', 'killed', 'Mal', 'by', 'MOD_RAILGUN']
+                    victim_name = parts[7]
+                if killer_name != victim_name:
                     current_game["kills"] += 1
-                if killer_id in current_game["players"]:
-                    current_game["players"][killer_id]["kills"] += 1            
+                if killer_name in current_game["players"]:
+                    current_game["players"][killer_name]["kills"] += 1            
             
 
     # Add the last game case it was not
