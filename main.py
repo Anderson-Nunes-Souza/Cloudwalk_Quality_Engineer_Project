@@ -39,12 +39,9 @@ try:
                         games.append(current_game)
                         current_game=None
             #Collects players info
-            elif "ClientUserinfoChanged" in line:
-            #print(line)
-            #parts = line
-            #parts = line.split(' ')
+            elif "ClientUserinfoChanged:" in line:
                 player_id = line[2]
-                player_name = line[5].split('\\')[1]
+                player_name = line[3].split('\\')[1]
                 if player_id not in current_game["players"]:
                     current_game["players"][player_id] = {
                         "name": player_name,
@@ -52,30 +49,40 @@ try:
                     }
                 else:
                     current_game["players"][player_id]["name"] = player_name
-
-            # Killcount
-            elif "Kill:" in line:
-                    if current_game is not None:
-                        #parts = line.split(' ')
-                        killer_id = line[5]
-                        victim_id = line[7]
-                    if killer_id != victim_id:
-                        current_game["kills"] += 1
-                        if killer_id in current_game["players"]:
-                            current_game["players"][killer_id]["kills"] += 1
+            
+            #Collects the kill Information
+            elif "killed" in line:
+                if current_game is not None:
+                    parts = str(line)
+                    print(parts)
+                    parts = parts.split(' ')
+# 11
+# ["['14:30',", "'Kill:',", "'5',", "'7',", "'6:',", "'Oootsimo',", "'killed',", "'Assasinu',", "'Credi',", "'by',", "'MOD_ROCKET']"]
+# 10
+# ["['14:31',", "'Kill:',", "'2',", "'4',", "'13:',", "'Isgalamido',", "'killed',", "'Zeh',", "'by',", "'MOD_BFG_SPLASH']"]
+# 12
+# ["['14:35',", "'Kill:',", "'5',", "'3',", "'7:',", "'Oootsimo',", "'killed',", "'Dono',", "'da',", "'Bola',", "'by',", "'MOD_ROCKET_SPLASH']"]
+                    killer_id = parts[5]
+                    victim_id = parts[7]
+                if killer_id != victim_id:
+                    current_game["kills"] += 1
+                if killer_id in current_game["players"]:
+                    current_game["players"][killer_id]["kills"] += 1            
+            
 
     # Add the last game case it was not
     if current_game is not None:
         games.append(current_game)
 
-    # Showing the results
+    #Showing the results
     for i, game in enumerate(games, 1):
         #print(game) #{'players': {}, 'kills': 94}
         print(f"Game {i}:")
         print(f"  Total Kills: {game['kills']}")
-        print("  Players:")
+        print("  Players: {")
         for player_id, player_info in game["players"].items():
-            print(f"{player_info['name']}: {player_info['kills']} kills")
+            print(f"    {player_info['name']}: \n   {player_info['kills']} kills \n")
+        print(' }')
 
         #print(f'content 0: {content[0]}')#content 0: ['0:00', '------------------------------------------------------------']
         #print(f'content 1: {content[1]}')#content 1: ['0:00', 'InitGame:', '\\sv_floodProtect\\1\\sv_maxPing\\0\\sv_minPing\\0\\sv_maxRate\\10000\\sv_minRate\\0\\sv_hostname\\Code', 'Miner', 'Server\\g_gametype\\0\\sv_privateClients\\2\\sv_maxclients\\16\\sv_allowDownload\\0\\dmflags\\0\\fraglimit\\20\\timelimit\\15\\g_maxGameClients\\0\\capturelimit\\8\\version\\ioq3', '1.36', 'linux-x86_64', 'Apr', '12', '2009\\protocol\\68\\mapname\\q3dm17\\gamename\\baseq3\\g_needpass\\0']
