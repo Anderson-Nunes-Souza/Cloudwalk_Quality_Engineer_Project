@@ -85,10 +85,15 @@ try:
                         #Verifies if the name is present in the current game lists of names
                         #and if its the same, adds +1 to the player killcount
                         if isinstance(player, dict):
-                            if 'name' in player:                                
+                            if 'name' in player:
+                                player_index = current_game['players'].index(player)                                
                                 if killer_name == player['name']:
-                                    player_index = current_game['players'].index(player)
                                     current_game["players"][player_index]["kills"] += 1
+                                elif killer_name == '<world>':
+                                    #if current_game["players"][player_index]["kills"] >0:
+                                        current_game["players"][player_index]["kills"] -= 1
+
+
            
     x=0
     for game in games:
