@@ -30,7 +30,7 @@ try:
                     #Adds the line to the games list
                     games.append(current_game)
                 current_game = {
-                    'players':{},
+                    'players':[{}],
                     'kills_total':0
                 }
             
@@ -49,16 +49,20 @@ try:
                 #Regex to adjust Player's Names with spaces
                 player_name = re.search(r'n\\(.*?)\\t', new_line)
                 player_name = player_name.group(1)
+                player = {
+                    "player_id": player_id,
+                    "name": player_name,
+                    "kills": 0
+                }
+                existPlayer = False
+                for playerStored in current_game['players']:
+                    if playerStored == player:
+                        existPlayer = True
+                if not existPlayer:
+                    current_game["players"].append(player)
+                
+                
 
-                if player_id not in current_game["players"]:
-                    current_game["players"] = {
-                        "player_id": player_id,
-                        "name": player_name,
-                        "kills": 0
-                    }
-                else:
-                    current_game["players"][player_id]["name"] = player_name
-            
             #Collects the kill Information
             elif "killed" in line:
                 if current_game is not None:
@@ -76,28 +80,27 @@ try:
                     current_game["kills_total"] += 1
 
                     #Runs the current game itens list
-                    for key, value in current_game.items():
+                    for player in current_game['players']:
 
                         #Verifies if the name is present in the current game lists of names
                         #and if its the same, adds +1 to the player killcount
-                        if isinstance(value, dict):
-                            if 'name' in value:
-                                if killer_name == value['name']:
-                                    current_game["players"]["kills"] += 1
-            
-
-    #Add the last game case it was not
-    if current_game is not None:
-        games.append(current_game)
-
-    #Showing the results
-    for i, game in enumerate(games, 1):
-        print(f"Game {i}:")
+                        if isinstance(player, dict):
+                            if 'name' in player:                                
+                                if killer_name == player['name']:
+                                    player_index = current_game['players'].index(player)
+                                    current_game["players"][player_index]["kills"] += 1
+           
+    x=0
+    for game in games:
+        print(f'Game {x+1}')
         print(f"  Total Kills: {game['kills_total']}")
-        print("  Players: {")
-        for player_id, player_info in game["players"].items():
-            print(f"    {player_info['name']}: \n   {player_info['kills']} kills \n")
-        print(' }')
+        print(f'Players: '+'{')
+        for player in game['players']:
+            if isinstance(player, dict):
+                if 'name' in player:
+                    print(f'    {player['name']} - Kills: {player['kills']}')
+        print('}\n')
+        x+=1
 
 except FileNotFoundError:
     print(f"Log file {file_path} not found")
