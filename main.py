@@ -28,14 +28,15 @@ try:
         if not line:
             continue
             
-            #identifies Start game
+        #identifies Start game
         if "InitGame:" in line:
             if current_game is not None:
                 #Adds the line to the games list
                 games.append(current_game)
             current_game = {
-                'players':[{}],
-                'kills_total':0
+                'kills_total': 0,
+                'players':[],
+                'kills': {},
             }
         
         #Identifies the end of a Game
@@ -46,25 +47,24 @@ try:
 
         #Collects players info
         elif "ClientUserinfoChanged:" in line:
-            player_id = line[2]
+            #player_id = line[2]
             regex = 'r"n\\(.+?)\\t"'
             new_line = ' '.join(line[3:])
 
             #Regex to adjust Player's Names with spaces
             player_name = re.search(r'n\\(.*?)\\t', new_line)
             player_name = player_name.group(1)
-            player = {
-                "player_id": player_id,
-                "name": player_name,
-                "kills": 0
-            }
             existPlayer = False
-            for playerStored in current_game['players']:
-                if playerStored == player:
-                    existPlayer = True
-            if not existPlayer:
-                current_game["players"].append(player)
-            
+            if len(current_game['players']) == 0:
+                current_game['players'].append(player_name)
+                current_game['kills'][player_name]=0
+            else:
+                for player in current_game['players']:
+                    if player == player_name:
+                        existPlayer = True
+                if not existPlayer:
+                    current_game["players"].append(player_name)
+                    current_game['kills'][player_name]=0            
             
 
         #Collects the kill Information
@@ -79,40 +79,24 @@ try:
                 victim_name = ' '.join(parts[killed_index:by_index])
 
             # Verifies if the killer name is different from the victim name
-            # and add +1 to the game kill count
+            # and add +1 to the the player kill count and adds the game killcount too
             if killer_name != victim_name:
                 current_game["kills_total"] += 1
+                kill_count = 0
+                if '<world>' != killer_name:
+                    killer = killer_name
+                    kill_count = 1
+                else:
+                    killer = victim_name 
+                    kill_count = -1
+                current_game['kills'][killer] += kill_count
 
-                #Runs the current game itens list
-                for player in current_game['players']:
-
-                    #Verifies if the name is present in the current game lists of names
-                    #and if its the same, adds +1 to the player killcount
-                    if isinstance(player, dict):
-                        if 'name' in player:
-                            player_index = current_game['players'].index(player)                                
-                            if killer_name == player['name']:
-                                current_game["players"][player_index]["kills"] += 1
-                            elif killer_name == '<world>':
-                                    
-                                #(optional)logic that blocks the kills not to substract less than 0
-                                #if current_game["players"][player_index]["kills"] >0:
-                                    current_game["players"][player_index]["kills"] -= 1
-    #Exibihit the end Result     
+#     #Exibihit the end Result     
     x=0
     for game in games:
         data = json.dumps(game, indent=3)
-        data = json.loads(data)
-        print(f'Game {x+1}')
-        print(f"  Total Kills: {data['kills_total']}")
-        print(f'Players: '+'{')
-
-        #Exibihit the Player's names and Killlist
-        for player in data['players']:
-            if isinstance(player, dict):
-                if 'name' in player:
-                    print(f'    {player['name']} - Kills: {player['kills']}')
-        print('}\n')
+        print(f'game_{x+1}')
+        print(data)
         x+=1
 
 except FileNotFoundError:
