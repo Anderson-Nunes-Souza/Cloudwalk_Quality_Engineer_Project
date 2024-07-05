@@ -107,12 +107,10 @@ def identifiesEndGame(line, current_game):
 
 #Exibihit the end Result function  
 def showResults():
-    x=0
-    for game in games:
+    for index, game in enumerate(games):
         data = json.dumps(game, indent=3)
-        print(f'game_{x+1}')
+        print(f'game_{index+1}')
         print(data)
-        x+=1
 
 #Main Function
 def main():
