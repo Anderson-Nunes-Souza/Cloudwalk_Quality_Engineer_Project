@@ -2,7 +2,6 @@ import re
 import json
 
 games = []
-current_game = None
 
 #Assets path to simplify to the user
 assets_path = ('./assets/')
@@ -19,17 +18,9 @@ def readfile():
         content = file.readlines()
     return content
 
-try:
-    content = readfile()
-    #Splits the list information
-    for line in content:
-        line = line.split()
-
-        if not line:
-            continue
-            
-        #identifies Start game
-        if "InitGame:" in line:
+#Identifies the Start of a Game
+def identifiesStartGame(line,current_game):
+    if "InitGame:" in line:
             if current_game is not None:
                 #Adds the line to the games list
                 games.append(current_game)
@@ -38,37 +29,41 @@ try:
                 'players':[],
                 'kills': {},
             }
-        
-        #Identifies the end of a Game
-        elif "ShutdownGame:" in line:
-            if current_game is not None:
-                    games.append(current_game)
-                    current_game=None
+    return current_game
 
-        #Collects players info
-        elif "ClientUserinfoChanged:" in line:
-            #player_id = line[2]
-            regex = 'r"n\\(.+?)\\t"'
-            new_line = ' '.join(line[3:])
+#Identifies the end of a Game
+def identifiesEndGame(line, current_game):
+    if "ShutdownGame:" in line:
+        if current_game is not None:
+            games.append(current_game)
+            current_game=None
+    return current_game
 
-            #Regex to adjust Player's Names with spaces
-            player_name = re.search(r'n\\(.*?)\\t', new_line)
-            player_name = player_name.group(1)
-            existPlayer = False
-            if len(current_game['players']) == 0:
-                current_game['players'].append(player_name)
+#Collects players info
+def collectsPlayersInfo(line, current_game, regex):
+    
+    if "ClientUserinfoChanged:" in line:
+        new_line = ' '.join(line[3:])
+
+        #Regex to adjust Player's Names with spaces
+        player_name = re.search(r'n\\(.*?)\\t', new_line)
+        player_name = player_name.group(1)
+        existPlayer = False
+        if len(current_game['players']) == 0:
+            current_game['players'].append(player_name)
+            current_game['kills'][player_name]=0
+        else:
+            for player in current_game['players']:
+                if player == player_name:
+                    existPlayer = True
+            if not existPlayer:
+                current_game["players"].append(player_name)
                 current_game['kills'][player_name]=0
-            else:
-                for player in current_game['players']:
-                    if player == player_name:
-                        existPlayer = True
-                if not existPlayer:
-                    current_game["players"].append(player_name)
-                    current_game['kills'][player_name]=0            
-            
+    return current_game
 
-        #Collects the kill Information
-        elif "killed" in line:
+#Collects the kill Information
+def collectsKillInformation(line, current_game):
+        if "killed" in line:
             if current_game is not None:
                 parts = line
 
@@ -90,16 +85,43 @@ try:
                     killer = victim_name 
                     kill_count = -1
                 current_game['kills'][killer] += kill_count
+        return current_game
 
-#     #Exibihit the end Result     
+#Exibihit the end Result     
+def showResults():
     x=0
     for game in games:
         data = json.dumps(game, indent=3)
         print(f'game_{x+1}')
         print(data)
         x+=1
+        
+#Main Function
+def main():
+    try:
+        current_game = None
+        regex = 'r"n\\(.+?)\\t"'
+        content = readfile()
 
-except FileNotFoundError:
-    print(f"Log file {file_path} not found")
-except Exception as e:
-    print(f'theres a error to read the file, please verify if the file is correct: {e}')
+        #Splits the list information
+        for line in content:
+            line = line.split()
+            if not line:
+                continue
+            #Executes all the verifications for the Script
+            current_game = identifiesStartGame(line,current_game) 
+            current_game = identifiesEndGame(line, current_game)
+            current_game = collectsPlayersInfo(line, current_game, regex)
+            current_game = collectsKillInformation(line, current_game)
+    
+    #Treats the files Errors and exceptions
+    except FileNotFoundError:
+        print(f"Log file {file_path} not found")
+    except Exception as e:
+        print(f'theres a error to read the file, please verify if the file is correct: {e}')
+    #Showr the Final Results
+    finally:
+        showResults()
+
+if __name__ == "__main__":
+    main()
